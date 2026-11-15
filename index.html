@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="Grid Club — a modern Tic Tac Toe game. Play with a friend or challenge the computer.">
+<title>Grid Club — Tic Tac Toe</title>
+<style>
+:root{color-scheme:dark;--bg:#101827;--panel:#192438;--line:#2b3a53;--muted:#9aa9bf;--text:#f4f7fb;--cyan:#58e1d2;--pink:#ff7ca8}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(ellipse at 20% 0%,#213552 0,transparent 42%),radial-gradient(ellipse at 100% 100%,#2b244b 0,transparent 38%),var(--bg);color:var(--text);display:grid;place-items:center;padding:24px}
+main{width:min(100%,520px)}header{text-align:center;margin-bottom:24px}.eyebrow{color:var(--cyan);font-size:.75rem;font-weight:800;letter-spacing:.24em;text-transform:uppercase}h1{font-size:clamp(2.5rem,9vw,4rem);line-height:1;margin:10px 0 8px;letter-spacing:-.06em}.subtitle{color:var(--muted);margin:0}
+.panel{background:#192438eF;border:1px solid var(--line);border-radius:26px;padding:clamp(18px,5vw,28px);box-shadow:0 24px 80px #0006;backdrop-filter:blur(14px)}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.mode{display:flex;gap:8px;flex-wrap:wrap}.mode button,.reset{border:1px solid var(--line);background:#111c2d;color:var(--muted);padding:10px 13px;border-radius:12px;font-weight:700;cursor:pointer}.mode button.active{background:#23434b;color:var(--cyan);border-color:#387b7a}.reset{color:var(--text)}
+.score{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:16px 0 20px}.score div{background:#111c2d;border:1px solid var(--line);border-radius:15px;text-align:center;padding:12px 6px}.score b{display:block;font-size:1.55rem}.score span{font-size:.72rem;color:var(--muted);font-weight:700;letter-spacing:.08em}
+.status{text-align:center;color:var(--muted);font-weight:700;min-height:26px;margin:8px 0 16px}.status strong{color:var(--cyan)}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:390px;margin:0 auto}.cell{aspect-ratio:1;border:1px solid #34445f;border-radius:19px;background:linear-gradient(145deg,#223149,#172337);font-size:clamp(2.8rem,13vw,4.6rem);font-weight:800;cursor:pointer;display:grid;place-items:center;transition:transform .15s,border-color .15s,background .15s}.cell:hover:enabled{transform:translateY(-2px);border-color:#66809f}.cell:focus-visible,button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}.cell.x{color:var(--cyan)}.cell.o{color:var(--pink)}.cell.win{background:#24453f;border-color:var(--cyan)}.bottom{display:flex;justify-content:center;gap:10px;margin-top:20px}.bottom button{border:0;border-radius:13px;padding:12px 18px;font-weight:800;cursor:pointer;background:var(--cyan);color:#10212b}.bottom .secondary{background:#293851;color:var(--text)}footer{text-align:center;color:#8292aa;font-size:.78rem;margin-top:18px}
+@media(max-width:390px){body{padding:14px}.topline{align-items:flex-start;flex-direction:column}.reset{width:100%}.panel{border-radius:20px}}
+</style>
+</head>
+<body>
+<main>
+<header><div class="eyebrow">Think • Play • Win</div><h1>Grid Club<span style="color:var(--cyan)">.</span></h1><p class="subtitle">A little strategy goes a long way.</p></header>
+<section class="panel" aria-label="Tic Tac Toe game">
+<div class="topline"><div class="mode" aria-label="Game mode"><button class="active" id="twoPlayer" type="button">2 Players</button><button id="computer" type="button">Vs Computer</button></div><button class="reset" id="resetScores" type="button">Reset scores ↻</button></div>
+<div class="score"><div><b id="xScore" style="color:var(--cyan)">0</b><span>PLAYER X</span></div><div><b id="drawScore">0</b><span>DRAWS</span></div><div><b id="oScore" style="color:var(--pink)">0</b><span id="oLabel">PLAYER O</span></div></div>
+<p class="status" id="status" aria-live="polite"><strong>Player X</strong> — your turn</p>
+<div class="board" id="board" role="group" aria-label="Tic Tac Toe board">
+<button class="cell" type="button" data-cell="0" aria-label="Empty square 1"></button><button class="cell" type="button" data-cell="1" aria-label="Empty square 2"></button><button class="cell" type="button" data-cell="2" aria-label="Empty square 3"></button><button class="cell" type="button" data-cell="3" aria-label="Empty square 4"></button><button class="cell" type="button" data-cell="4" aria-label="Empty square 5"></button><button class="cell" type="button" data-cell="5" aria-label="Empty square 6"></button><button class="cell" type="button" data-cell="6" aria-label="Empty square 7"></button><button class="cell" type="button" data-cell="7" aria-label="Empty square 8"></button><button class="cell" type="button" data-cell="8" aria-label="Empty square 9"></button>
+</div>
+<div class="bottom"><button id="newGame" type="button">New game</button><button class="secondary" id="undo" type="button">Undo move</button></div>
+</section>
+<footer>Made for friendly competition · Grid Club</footer>
+</main>
+<script>
+const cells=[...document.querySelectorAll('.cell')],statusEl=document.getElementById('status');
+let board=Array(9).fill(''),turn='X',mode='two',over=false,history=[],scores={X:0,O:0,D:0};
+const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const $=id=>document.getElementById(id);
+function setStatus(msg){statusEl.innerHTML=msg}
+function render(){cells.forEach((c,i)=>{c.textContent=board[i];c.className='cell'+(board[i]?' '+board[i].toLowerCase():'');c.disabled=!!board[i]||over||(mode==='computer'&&turn==='O');c.setAttribute('aria-label',board[i]?'Square '+(i+1)+': '+board[i]:'Empty square '+(i+1))});$('xScore').textContent=scores.X;$('oScore').textContent=scores.O;$('drawScore').textContent=scores.D}
+function winner(){return wins.find(line=>line.every(i=>board[i]&&board[i]===board[line[0]]))}
+function finish(){const line=winner();if(line){over=true;scores[board[line[0]]]++;line.forEach(i=>cells[i].classList.add('win'));setStatus('<strong>Player '+board[line[0]]+' wins!</strong> Great game.');}else if(board.every(Boolean)){over=true;scores.D++;setStatus('<strong>It’s a draw!</strong> Well played.')}render()}
+function play(i){if(over||board[i]||(mode==='computer'&&turn==='O'))return;history.push({board:[...board],turn});board[i]=turn;if(winner()||board.every(Boolean)){finish();return}turn=turn==='X'?'O':'X';setStatus('<strong>Player '+turn+'</strong> — your turn');render();if(mode==='computer'&&turn==='O')setTimeout(computerMove,420)}
+function computerMove(){if(over)return;let choice=bestMove();play(choice)}
+function bestMove(){// Win if possible, otherwise block, then center/corners/sides.
+for(const mark of ['O','X'])for(let i=0;i<9;i++)if(!board[i]){board[i]=mark;const win=!!winner();board[i]='';if(win)return i}
+if(!board[4])return 4;const corners=[0,2,6,8].filter(i=>!board[i]);if(corners.length)return corners[Math.floor(Math.random()*corners.length)];const sides=[1,3,5,7].filter(i=>!board[i]);return sides[Math.floor(Math.random()*sides.length)]}
+function newGame(){board=Array(9).fill('');turn='X';over=false;history=[];setStatus('<strong>Player X</strong> — your turn');render()}
+function undo(){if(!history.length||over)return;const steps=mode==='computer'&&history.length>=2?2:1;for(let n=0;n<steps;n++){const prev=history.pop();if(prev){board=prev.board;turn=prev.turn}}setStatus('<strong>Player '+turn+'</strong> — your turn');render()}
+cells.forEach(c=>c.addEventListener('click',()=>play(Number(c.dataset.cell))));
+$('newGame').addEventListener('click',newGame);$('undo').addEventListener('click',undo);
+$('resetScores').addEventListener('click',()=>{scores={X:0,O:0,D:0};newGame()});
+$('twoPlayer').addEventListener('click',()=>{mode='two';$('twoPlayer').classList.add('active');$('computer').classList.remove('active');$('oLabel').textContent='PLAYER O';newGame()});
+$('computer').addEventListener('click',()=>{mode='computer';$('computer').classList.add('active');$('twoPlayer').classList.remove('active');$('oLabel').textContent='COMPUTER';newGame()});
+render();
+</script>
+</body>
+</html>
